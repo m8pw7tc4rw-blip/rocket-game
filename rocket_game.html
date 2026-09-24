@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ракета</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#0d1117; --card:#161b22; --accent:#3fb950; --accent2:#f85149;
+  --text:#e6edf3; --muted:#8b949e; --gold:#d29922;
+}
+*{box-sizing:border-box;}
+html,body{
+  margin:0; height:100%; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.wrap{max-width:480px;margin:0 auto;padding:16px;}
+h1{font-size:20px;font-weight:600;text-align:center;margin:8px 0 4px;}
+.sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px;}
+.stats{display:flex;gap:10px;margin-bottom:14px;}
+.stat{flex:1;background:var(--card);border-radius:12px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,0.05);}
+.stat .v{font-size:20px;font-weight:700;}
+.stat .l{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.02em;}
+.canvas-wrap{
+  position:relative;border-radius:16px;
+  height:300px;overflow:hidden;margin-bottom:16px;
+  background:radial-gradient(ellipse at 30% 100%, #1c2333 0%, #0a0e17 70%);
+  border:1px solid rgba(255,255,255,0.06);
+}
+canvas{display:block;width:100%;height:100%;}
+.mult{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:44px;font-weight:700;pointer-events:none;
+  text-shadow:0 2px 12px rgba(0,0,0,.5);
+}
+.mult.up{color:var(--text);}
+.mult.big{color:var(--accent);}
+.mult.down{color:var(--accent2);}
+.toast{
+  position:absolute;top:14px;left:50%;transform:translateX(-50%);
+  background:rgba(63,185,80,.95);color:#04240f;font-size:13px;font-weight:600;
+  padding:8px 16px;border-radius:20px;opacity:0;transition:opacity .25s;pointer-events:none;
+}
+.toast.show{opacity:1;}
+.overlay-msg{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;background:rgba(13,17,23,.85);gap:6px;
+}
+.overlay-msg.hidden{display:none;}
+.overlay-msg .big{font-size:26px;font-weight:700;}
+.overlay-msg .small{font-size:13px;color:var(--muted);}
+.controls{background:var(--card);border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,0.05);}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.row label{font-size:13px;color:var(--muted);min-width:64px;}
+input[type=range]{flex:1;accent-color:var(--accent);}
+.bet-out{min-width:44px;text-align:right;font-weight:600;font-size:14px;}
+button{
+  width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:600;
+  cursor:pointer;transition:transform .1s;
+}
+button:active{transform:scale(0.98);}
+#playBtn{background:var(--accent);color:#04240f;box-shadow:0 4px 14px rgba(63,185,80,.25);}
+#playBtn.flying{background:var(--gold);color:#3a2a02;box-shadow:0 4px 14px rgba(210,153,34,.3);}
+#playBtn:disabled{opacity:.5;cursor:default;box-shadow:none;}
+.err{color:var(--accent2);font-size:12px;text-align:center;margin-top:-4px;margin-bottom:8px;min-height:14px;}
+.header{display:flex;align-items:center;justify-content:space-between;margin:8px 0 4px;}
+.header h1{margin:0;}
+.iconBtn{
+  width:auto;padding:8px 12px;background:var(--card);border:1px solid rgba(255,255,255,0.08);
+  color:var(--text);font-size:13px;font-weight:500;border-radius:10px;
+}
+.profile-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;
+  justify-content:center;z-index:10;
+}
+.profile-overlay.hidden{display:none;}
+.profile-sheet{
+  background:var(--card);width:100%;max-width:480px;border-radius:20px 20px 0 0;
+  padding:20px;max-height:80vh;overflow-y:auto;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
+}
+.profile-sheet h2{font-size:17px;font-weight:600;margin:0 0 14px;display:flex;justify-content:space-between;align-items:center;}
+.profile-sheet h2 .close{font-size:20px;color:var(--muted);cursor:pointer;}
+.history-row{
+  display:flex;justify-content:space-between;align-items:center;padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;
+}
+.history-row:last-child{border-bottom:none;}
+.history-row .mult{position:static;transform:none;font-size:13px;font-weight:600;}
+.history-row .win{color:var(--accent);}
+.history-row .loss{color:var(--accent2);}
+.history-empty{color:var(--muted);font-size:13px;text-align:center;padding:20px 0;}
+.footnote{text-align:center;color:var(--muted);font-size:11px;margin-top:14px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>Ракета</h1>
+    <button class="iconBtn" id="profileBtn" type="button">Профиль</button>
+  </div>
+  <p class="sub">Заберите множитель до взрыва.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v" id="balanceOut">1000</div><div class="l">баланс</div></div>
+    <div class="stat"><div class="v" id="bestOut">0.00x</div><div class="l">лучший забор</div></div>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="cv"></canvas>
+    <div class="mult up" id="multLabel">1.00x</div>
+    <div class="toast" id="toast"></div>
+    <div class="overlay-msg hidden" id="overlay">
+      <div class="big" id="overlayBig"></div>
+      <div class="small" id="overlaySmall"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="row">
+      <label>Ставка</label>
+      <input type="range" id="betSlider" min="10" max="500" step="10" value="50">
+      <span class="bet-out" id="betOut">50</span>
+    </div>
+    <div class="err" id="err"></div>
+    <button id="playBtn">Запустить ракету</button>
+  </div>
+
+  <p class="footnote">Игра на виртуальные очки, без реальных денег и вывода средств. RTP ≈ 90% — заложено для баланса игровой экономики.</p>
+</div>
+
+<div class="profile-overlay hidden" id="profileOverlay">
+  <div class="profile-sheet">
+    <h2>Профиль <span class="close" id="profileClose">✕</span></h2>
+    <div class="stats" style="margin-bottom:16px;">
+      <div class="stat"><div class="v" id="pBalance">0</div><div class="l">баланс</div></div>
+      <div class="stat"><div class="v" id="pBest">0.00x</div><div class="l">лучший забор</div></div>
+      <div class="stat"><div class="v" id="pRounds">0</div><div class="l">раундов</div></div>
+    </div>
+    <h2 style="font-size:14px;color:var(--muted);">История раундов</h2>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const RTP = 0.90;
+const STORAGE_KEY = 'rocket_game_state_v2';
+
+function loadState(){
+  const defaults = { balance: 10000, best: 0, rounds: 0, history: [] };
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      return Object.assign({}, defaults, parsed, {
+        history: Array.isArray(parsed.history) ? parsed.history : []
+      });
+    }
+  }catch(e){}
+  return defaults;
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+let state = loadState();
+
+const balanceOut = document.getElementById('balanceOut');
+const bestOut = document.getElementById('bestOut');
+const betSlider = document.getElementById('betSlider');
+const betOut = document.getElementById('betOut');
+const playBtn = document.getElementById('playBtn');
+const multLabel = document.getElementById('multLabel');
+const overlay = document.getElementById('overlay');
+const overlayBig = document.getElementById('overlayBig');
+const overlaySmall = document.getElementById('overlaySmall');
+const errEl = document.getElementById('err');
+const toast = document.getElementById('toast');
+const profileBtn = document.getElementById('profileBtn');
+const profileOverlay = document.getElementById('profileOverlay');
+const profileClose = document.getElementById('profileClose');
+const pBalance = document.getElementById('pBalance');
+const pBest = document.getElementById('pBest');
+const pRounds = document.getElementById('pRounds');
+const historyList = document.getElementById('historyList');
+
+function renderProfile(){
+  pBalance.textContent = Math.round(state.balance);
+  pBest.textContent = state.best.toFixed(2) + 'x';
+  pRounds.textContent = state.rounds || 0;
+
+  const hist = Array.isArray(state.history) ? state.history : [];
+  if(hist.length === 0){
+    historyList.innerHTML = '<div class="history-empty">Пока нет сыгранных раундов</div>';
+    return;
+  }
+  historyList.innerHTML = hist.slice().reverse().map(h => {
+    const cls = h.net >= 0 ? 'win' : 'loss';
+    const sign = h.net >= 0 ? '+' : '';
+    return '<div class="history-row">' +
+      '<span>Ставка ' + h.bet + '</span>' +
+      '<span class="mult">' + h.mult.toFixed(2) + 'x</span>' +
+      '<span class="' + cls + '">' + sign + h.net + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function addHistory(bet, mult, net){
+  if(!Array.isArray(state.history)) state.history = [];
+  state.history.push({ bet, mult, net });
+  if(state.history.length > 20) state.history.shift();
+}
+
+profileBtn.addEventListener('click', () => {
+  renderProfile();
+  profileOverlay.classList.remove('hidden');
+});
+profileClose.addEventListener('click', () => profileOverlay.classList.add('hidden'));
+profileOverlay.addEventListener('click', (e) => {
+  if(e.target === profileOverlay) profileOverlay.classList.add('hidden');
+});
+
+function renderStats(){
+  balanceOut.textContent = Math.round(state.balance);
+  bestOut.textContent = state.best.toFixed(2) + 'x';
+}
+renderStats();
+
+betSlider.addEventListener('input', () => {
+  betOut.textContent = betSlider.value;
+});
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let stars = [];
+function makeStars(w,h){
+  const arr = [];
+  for(let i=0;i<50;i++){
+    arr.push({ x: Math.random()*w, y: Math.random()*h, r: Math.random()*1.4+0.3, a: Math.random()*0.5+0.2 });
+  }
+  return arr;
+}
+function fitCanvas(){
+  const rect = cv.getBoundingClientRect();
+  cv.width = rect.width * devicePixelRatio;
+  cv.height = rect.height * devicePixelRatio;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  stars = makeStars(rect.width, rect.height);
+}
+fitCanvas();
+window.addEventListener('resize', fitCanvas);
+
+let particles = [];
+function spawnParticles(x, y, color, count){
+  for(let i=0;i<count;i++){
+    const angle = Math.random()*Math.PI*2;
+    const speed = 1 + Math.random()*3;
+    particles.push({
+      x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
+      life: 1, color
+    });
+  }
+}
+function updateParticles(){
+  particles = particles.filter(p => p.life > 0);
+  for(const p of particles){
+    p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.life -= 0.03;
+  }
+}
+function drawParticles(){
+  for(const p of particles){
+    ctx.globalAlpha = Math.max(p.life,0);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2.5, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* Точка обрыва по распределению, откалиброванному под целевой RTP.
+   Классическая формула crash-игр: crashPoint = 1 / (1 - r * RTP),
+   где r равномерно из [0,1). Это даёт средний множитель ~= RTP при
+   стратегии "всегда держать до конца", и гарантирует house edge. */
+function rollCrashPoint(){
+  const r = Math.random();
+  const raw = 1 / (1 - r * RTP);
+  return Math.max(1.00, Math.min(raw, 50));
+}
+
+let flying = false;
+let crashPoint = 0;
+let currentMult = 1.0;
+let startTime = 0;
+let rafId = null;
+let currentBet = 0;
+let cashedOut = false;
+
+function drawFrame(mult, crashed){
+  const w = cv.clientWidth, h = cv.clientHeight;
+  ctx.clearRect(0,0,w,h);
+
+  for(const s of stars){
+    ctx.globalAlpha = s.a;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for(let i=1;i<5;i++){
+    const y = h - (h/5)*i;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+
+  const progress = Math.min((mult - 1) / 5, 1);
+  const x = 24 + progress * (w - 64);
+  const y = h - 24 - progress * (h - 64);
+  const color = crashed ? '#f85149' : '#3fb950';
+
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 14;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(24, h-24);
+  ctx.quadraticCurveTo(x, h-24, x, y);
+  ctx.stroke();
+  ctx.restore();
+
+  const angle = Math.atan2(-(h-24-y), (x-24)+1) - Math.PI/2 + 0.5;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(crashed ? 0.8 : Math.max(-0.3, Math.min(angle, 0.2)));
+  ctx.font = '22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(crashed ? '💥' : '🚀', 0, 0);
+  ctx.restore();
+
+  updateParticles();
+  drawParticles();
+
+  return { x, y };
+}
+
+function resetVisual(){
+  multLabel.textContent = '1.00x';
+  multLabel.className = 'mult up';
+  overlay.classList.add('hidden');
+  drawFrame(1.0, false);
+}
+resetVisual();
+
+function startRound(){
+  errEl.textContent = '';
+  const bet = parseInt(betSlider.value, 10);
+
+  if(!bet || bet <= 0){
+    errEl.textContent = 'Выберите ставку больше нуля';
+    return;
+  }
+  if(bet > state.balance){
+    errEl.textContent = 'Недостаточно очков для такой ставки';
+    return;
+  }
+
+  currentBet = bet;
+  state.balance -= bet;
+  renderStats();
+
+  flying = true;
+  cashedOut = false;
+  currentMult = 1.0;
+  crashPoint = rollCrashPoint();
+  startTime = performance.now();
+
+  overlay.classList.add('hidden');
+  multLabel.className = 'mult up';
+  playBtn.textContent = 'Забрать';
+  playBtn.classList.add('flying');
+  playBtn.disabled = false;
+
+  tick();
+}
+
+function tick(){
+  const elapsed = (performance.now() - startTime) / 1000;
+  currentMult = 1 + elapsed * 0.12 + elapsed * elapsed * 0.02;
+
+  if(currentMult >= crashPoint){
+    crash();
+    return;
+  }
+
+  multLabel.textContent = currentMult.toFixed(2) + 'x';
+  multLabel.className = currentMult >= 2 ? 'mult big' : 'mult up';
+  drawFrame(currentMult, false);
+
+  rafId = requestAnimationFrame(tick);
+}
+
+function fadeParticles(){
+  if(particles.length === 0) return;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  for(const s of stars){
+    ctx.globalAlpha = s.a;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  updateParticles();
+  drawParticles();
+  requestAnimationFrame(fadeParticles);
+}
+
+function crash(){
+  flying = false;
+  cancelAnimationFrame(rafId);
+  const pos = drawFrame(crashPoint, true);
+  multLabel.textContent = crashPoint.toFixed(2) + 'x';
+  multLabel.className = 'mult down';
+  spawnParticles(pos.x, pos.y, '#f85149', 22);
+  fadeParticles();
+
+  if(!cashedOut){
+    state.rounds += 1;
+    overlayBig.textContent = 'Взрыв на ' + crashPoint.toFixed(2) + 'x';
+    overlaySmall.textContent = 'Ставка ' + currentBet + ' очков потеряна';
+    overlay.classList.remove('hidden');
+    addHistory(currentBet, crashPoint, -currentBet);
+    saveState();
+    renderStats();
+  }
+
+  playBtn.textContent = 'Запустить ракету';
+  playBtn.classList.remove('flying');
+  playBtn.disabled = false;
+}
+
+function showToast(text){
+  toast.textContent = text;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1200);
+}
+
+function cashOut(){
+  if(!flying || cashedOut) return;
+  cashedOut = true;
+
+  const win = Math.round(currentBet * currentMult);
+  state.balance += win;
+  if(currentMult > state.best) state.best = currentMult;
+  state.rounds += 1;
+  addHistory(currentBet, currentMult, win - currentBet);
+
+  showToast('+' + win + ' очков забрано на ' + currentMult.toFixed(2) + 'x');
+
+  playBtn.textContent = 'Ракета летит…';
+  playBtn.disabled = true;
+  playBtn.classList.remove('flying');
+  saveState();
+  renderStats();
+  /* Раунд визуально продолжается: tick() не останавливаем, ракета летит
+     до фактического взрыва, но деньги уже зачислены и повторно списаны
+     или начислены не будут (см. проверку cashedOut внутри crash()). */
+}
+
+playBtn.addEventListener('click', () => {
+  if(!flying){
+    if(state.balance <= 0){
+      errEl.textContent = 'Очки закончились. Обновите страницу для сброса.';
+      return;
+    }
+    startRound();
+  } else {
+    cashOut();
+  }
+});
+</script>
+</body>
+</html>
