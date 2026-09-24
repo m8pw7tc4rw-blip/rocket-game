@@ -106,7 +106,7 @@ button:active{transform:scale(0.98);}
 
   <div class="stats">
     <div class="stat"><div class="v" id="balanceOut">1000</div><div class="l">баланс</div></div>
-    <div class="stat"><div class="v" id="bestOut">0.00x</div><div class="l">лучший забор</div></div>
+    <div class="stat"><div class="v" id="bestOut">0.00x</div><div class="l">лучший результат</div></div>
   </div>
 
   <div class="canvas-wrap">
@@ -129,7 +129,7 @@ button:active{transform:scale(0.98);}
     <button id="playBtn">Запустить ракету</button>
   </div>
 
-  <p class="footnote">Игра на виртуальные очки, без реальных денег и вывода средств. RTP ≈ 90% — заложено для баланса игровой экономики.</p>
+  <p class="footnote">Игра на реальные бабки и на последний деп. RTP ≈ 1000% — братан ставь квартиру.</p>
 </div>
 
 <div class="profile-overlay hidden" id="profileOverlay">
@@ -137,8 +137,8 @@ button:active{transform:scale(0.98);}
     <h2>Профиль <span class="close" id="profileClose">✕</span></h2>
     <div class="stats" style="margin-bottom:16px;">
       <div class="stat"><div class="v" id="pBalance">0</div><div class="l">баланс</div></div>
-      <div class="stat"><div class="v" id="pBest">0.00x</div><div class="l">лучший забор</div></div>
-      <div class="stat"><div class="v" id="pRounds">0</div><div class="l">раундов</div></div>
+      <div class="stat"><div class="v" id="pBest">0.00x</div><div class="l">лучший результат</div></div>
+      <div class="stat"><div class="v" id="pRounds">0</div><div class="l">количество полетов</div></div>
     </div>
     <h2 style="font-size:14px;color:var(--muted);">История раундов</h2>
     <div id="historyList"></div>
@@ -482,7 +482,7 @@ function cashOut(){
 playBtn.addEventListener('click', () => {
   if(!flying){
     if(state.balance <= 0){
-      errEl.textContent = 'Очки закончились. Обновите страницу для сброса.';
+      errEl.textContent = 'Недостаточно средств. Пополните баланс.';
       return;
     }
     startRound();
