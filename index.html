@@ -593,15 +593,15 @@ document.getElementById('toRocketBtn').addEventListener('click', () => {
 
 /* ===================== САПЁР СЪЕМНОЙ СТАВКОЙ ===================== */
 const MS_STORAGE_KEY = 'minesweeper_state_v2';
-const MS_RTP = 0.95; // фиксированный RTP: 95%, без подстройки под игрока
+const MS_RTP = 0.80; // фиксированный RTP: 95%, без подстройки под игрока
 const MS_DIFFICULTIES = {
-  easy:   { size: 5, mines: 5 },
-  medium: { size: 6, mines: 10 },
-  hard:   { size: 7, mines: 17 }
+  easy:   { size: 5, mines: 8 },
+  medium: { size: 6, mines: 14 },
+  hard:   { size: 7, mines: 20 }
 };
 
 function msLoadState(){
-  const defaults = { balance: 10000, best: 0, wins: 0, played: 0, difficulty: 'easy' };
+  const defaults = { balance: 1000, best: 0, wins: 0, played: 0, difficulty: 'easy' };
   try{
     const raw = localStorage.getItem(MS_STORAGE_KEY);
     if(raw) return Object.assign({}, defaults, JSON.parse(raw));
