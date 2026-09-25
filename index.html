@@ -593,7 +593,7 @@ document.getElementById('toRocketBtn').addEventListener('click', () => {
 
 /* ===================== САПЁР СЪЕМНОЙ СТАВКОЙ ===================== */
 const MS_STORAGE_KEY = 'minesweeper_state_v2';
-const MS_RTP = 0.80; // фиксированный RTP: 95%, без подстройки под игрока
+const MS_RTP = 0.65; // фиксированный RTP: 65%, без подстройки под игрока
 const MS_DIFFICULTIES = {
   easy:   { size: 5, mines: 8 },
   medium: { size: 6, mines: 14 },
@@ -680,7 +680,7 @@ function msGetMultiplier(){
   }
 
   // Фиксированный RTP: при любом заранее выбранном количестве
-  // открытий математическое ожидание выплаты одинаково — 95%.
+  // открытий математическое ожидание выплаты одинаково — 70%.
   return MS_RTP / survival;
 }
 
