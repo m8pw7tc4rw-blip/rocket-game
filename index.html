@@ -94,19 +94,67 @@ button:active{transform:scale(0.98);}
 .history-row .loss{color:var(--accent2);}
 .history-empty{color:var(--muted);font-size:13px;text-align:center;padding:20px 0;}
 .footnote{text-align:center;color:var(--muted);font-size:11px;margin-top:14px;line-height:1.5;}
+
+.diffBtn{
+  flex:1;padding:10px 4px;font-size:12px;font-weight:600;border-radius:10px;
+  background:#21262d;color:var(--muted);border:1px solid transparent;
+}
+.diffBtn.active{background:var(--accent);color:#04240f;}
+
+.mines-status{
+  text-align:center;font-size:13px;color:var(--muted);margin-bottom:10px;min-height:18px;
+}
+.mines-grid{
+  display:grid;gap:5px;background:var(--card);border-radius:14px;padding:10px;max-width:390px;margin:0 auto;
+  border:1px solid rgba(255,255,255,0.05);
+}
+.mine-cell{
+  aspect-ratio:1/1;background:#21262d;border-radius:7px;display:flex;align-items:center;
+  justify-content:center;font-size:14px;font-weight:700;color:var(--text);
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  cursor:pointer;transition:transform .12s ease,background .16s ease,box-shadow .16s ease;position:relative;overflow:hidden;
+}
+.mine-cell:not(.revealed):active{transform:scale(.92);}
+.mine-cell.revealed{background:#0d1117;animation:mineReveal .22s ease-out both;}
+.mine-cell.revealed::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.08);animation:mineFlash .28s ease-out both;pointer-events:none;}
+.mine-cell.mine{animation:mineBoom .32s ease-out both;}
+@keyframes mineReveal{0%{transform:scale(.72);opacity:.35;}70%{transform:scale(1.06);}100%{transform:scale(1);opacity:1;}}
+@keyframes mineFlash{0%{opacity:.7;transform:scale(.7);}100%{opacity:0;transform:scale(1.4);}}
+@keyframes mineBoom{0%{transform:scale(.75);opacity:.4;}45%{transform:scale(1.14);}100%{transform:scale(1);opacity:1;}}
+.mine-cell.flagged{background:#21262d;}
+.mine-cell.mine{background:var(--accent2);}
+.mine-cell.safe-open{color:#3fb950;font-size:22px;animation:safePop .38s cubic-bezier(.2,.9,.3,1.25) both;}
+.mine-cell.safe-open::before{
+  content:"";position:absolute;width:10px;height:10px;border-radius:50%;
+  background:rgba(63,185,80,.35);transform:scale(.2);animation:safeGlow .5s ease-out both;
+}
+@keyframes safePop{
+  0%{transform:scale(.35) rotate(-18deg);opacity:0}
+  55%{transform:scale(1.28) rotate(5deg);opacity:1}
+  100%{transform:scale(1) rotate(0);opacity:1}
+}
+@keyframes safeGlow{
+  0%{transform:scale(.2);opacity:.9}
+  100%{transform:scale(5);opacity:0}
+}
+#msRestartBtn{background:#21262d;color:var(--text);}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div id="rocketScreen">
   <div class="header">
     <h1>Ракета</h1>
-    <button class="iconBtn" id="profileBtn" type="button">Профиль</button>
+    <div style="display:flex;gap:8px;">
+      <button class="iconBtn" id="toMinesBtn" type="button">🧩 Сапёр</button>
+      <button class="iconBtn" id="profileBtn" type="button">Профиль</button>
+    </div>
   </div>
   <p class="sub">Заберите множитель до взрыва.</p>
 
   <div class="stats">
     <div class="stat"><div class="v" id="balanceOut">1000</div><div class="l">баланс</div></div>
-    <div class="stat"><div class="v" id="bestOut">0.00x</div><div class="l">лучший результат</div></div>
+    <div class="stat"><div class="v" id="bestOut">0.00x</div><div class="l">лучший забор</div></div>
   </div>
 
   <div class="canvas-wrap">
@@ -122,14 +170,54 @@ button:active{transform:scale(0.98);}
   <div class="controls">
     <div class="row">
       <label>Ставка</label>
-      <input type="range" id="betSlider" min="5" max="1000" step="10" value="50">
+      <input type="range" id="betSlider" min="10" max="500" step="10" value="50">
       <span class="bet-out" id="betOut">50</span>
     </div>
     <div class="err" id="err"></div>
     <button id="playBtn">Запустить ракету</button>
   </div>
 
-  <p class="footnote">Игра на реальные бабки и на последний деп. RTP ≈ 1000% — братан ставь квартиру.</p>
+  <p class="footnote">Игра на виртуальные очки, без реальных денег и вывода средств. RTP ≈ 90% — заложено для баланса игровой экономики.</p>
+  </div>
+
+  <div id="minesScreen" style="display:none;">
+    <div class="header">
+      <h1>Сапёр</h1>
+      <div style="display:flex;gap:8px;">
+        <button class="iconBtn" id="toRocketBtn" type="button">🚀 Ракета</button>
+      </div>
+    </div>
+    <p class="sub">Откройте все безопасные клетки, не задев мину.</p>
+
+    <div class="stats">
+      <div class="stat"><div class="v" id="msBalanceOut">10000</div><div class="l">баланс</div></div>
+      <div class="stat"><div class="v" id="msMultOut">1.00x</div><div class="l">множитель</div></div>
+      <div class="stat"><div class="v" id="msWinOut">0</div><div class="l">заберёте</div></div>
+    </div>
+
+    <div class="controls" style="margin-bottom:14px;">
+      <div class="row">
+        <label>Ставка</label>
+        <input type="range" id="msBetSlider" min="10" max="500" step="10" value="50">
+        <span class="bet-out" id="msBetOut">50</span>
+      </div>
+      <div class="row" style="margin-bottom:0;">
+        <label>Сложность</label>
+        <div style="display:flex;gap:8px;flex:1;">
+          <button class="diffBtn" data-diff="easy" type="button">Лёгкая</button>
+          <button class="diffBtn" data-diff="medium" type="button">Средняя</button>
+          <button class="diffBtn" data-diff="hard" type="button">Сложная</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mines-status" id="msStatus">Выберите ставку и откройте клетку</div>
+    <div class="mines-grid" id="msGrid"></div>
+
+    <button id="msActionBtn" style="margin-top:14px;background:var(--accent);color:#04240f;">Поставить 50</button>
+
+    <p class="footnote">Открывайте клетки по одной: каждая безопасная клетка повышает множитель. Мина обнуляет ставку. Заберите выигрыш до мины.</p>
+  </div>
 </div>
 
 <div class="profile-overlay hidden" id="profileOverlay">
@@ -137,8 +225,8 @@ button:active{transform:scale(0.98);}
     <h2>Профиль <span class="close" id="profileClose">✕</span></h2>
     <div class="stats" style="margin-bottom:16px;">
       <div class="stat"><div class="v" id="pBalance">0</div><div class="l">баланс</div></div>
-      <div class="stat"><div class="v" id="pBest">0.00x</div><div class="l">лучший результат</div></div>
-      <div class="stat"><div class="v" id="pRounds">0</div><div class="l">количество полетов</div></div>
+      <div class="stat"><div class="v" id="pBest">0.00x</div><div class="l">лучший забор</div></div>
+      <div class="stat"><div class="v" id="pRounds">0</div><div class="l">раундов</div></div>
     </div>
     <h2 style="font-size:14px;color:var(--muted);">История раундов</h2>
     <div id="historyList"></div>
@@ -153,7 +241,7 @@ const RTP = 0.90;
 const STORAGE_KEY = 'rocket_game_state_v2';
 
 function loadState(){
-  const defaults = { balance: 1000, best: 0, rounds: 0, history: [] };
+  const defaults = { balance: 10000, best: 0, rounds: 0, history: [] };
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
@@ -367,11 +455,11 @@ function startRound(){
   const bet = parseInt(betSlider.value, 10);
 
   if(!bet || bet <= 0){
-    errEl.textContent = 'Выберите ставку больше';
+    errEl.textContent = 'Выберите ставку больше нуля';
     return;
   }
   if(bet > state.balance){
-    errEl.textContent = 'Недостаточно средств для такой ставки';
+    errEl.textContent = 'Недостаточно очков для такой ставки';
     return;
   }
 
@@ -439,7 +527,7 @@ function crash(){
   if(!cashedOut){
     state.rounds += 1;
     overlayBig.textContent = 'Взрыв на ' + crashPoint.toFixed(2) + 'x';
-    overlaySmall.textContent = 'Ставка ' + currentBet + '  потеряна';
+    overlaySmall.textContent = 'Ставка ' + currentBet + ' очков потеряна';
     overlay.classList.remove('hidden');
     addHistory(currentBet, crashPoint, -currentBet);
     saveState();
@@ -467,7 +555,7 @@ function cashOut(){
   state.rounds += 1;
   addHistory(currentBet, currentMult, win - currentBet);
 
-  showToast('+' + win + ' $ забрано на ' + currentMult.toFixed(2) + 'x');
+  showToast('+' + win + ' очков забрано на ' + currentMult.toFixed(2) + 'x');
 
   playBtn.textContent = 'Ракета летит…';
   playBtn.disabled = true;
@@ -482,7 +570,7 @@ function cashOut(){
 playBtn.addEventListener('click', () => {
   if(!flying){
     if(state.balance <= 0){
-      errEl.textContent = 'Недостаточно средств. Пополните баланс.';
+      errEl.textContent = 'Очки закончились. Обновите страницу для сброса.';
       return;
     }
     startRound();
@@ -490,6 +578,324 @@ playBtn.addEventListener('click', () => {
     cashOut();
   }
 });
+
+/* ===================== НАВИГАЦИЯ МЕЖДУ ИГРАМИ ===================== */
+const rocketScreen = document.getElementById('rocketScreen');
+const minesScreen = document.getElementById('minesScreen');
+document.getElementById('toMinesBtn').addEventListener('click', () => {
+  rocketScreen.style.display = 'none';
+  minesScreen.style.display = 'block';
+});
+document.getElementById('toRocketBtn').addEventListener('click', () => {
+  minesScreen.style.display = 'none';
+  rocketScreen.style.display = 'block';
+});
+
+/* ===================== САПЁР СЪЕМНОЙ СТАВКОЙ ===================== */
+const MS_STORAGE_KEY = 'minesweeper_state_v2';
+const MS_RTP = 0.95; // фиксированный RTP: 95%, без подстройки под игрока
+const MS_DIFFICULTIES = {
+  easy:   { size: 5, mines: 5 },
+  medium: { size: 6, mines: 10 },
+  hard:   { size: 7, mines: 17 }
+};
+
+function msLoadState(){
+  const defaults = { balance: 10000, best: 0, wins: 0, played: 0, difficulty: 'easy' };
+  try{
+    const raw = localStorage.getItem(MS_STORAGE_KEY);
+    if(raw) return Object.assign({}, defaults, JSON.parse(raw));
+  }catch(e){}
+  return defaults;
+}
+function msSaveState(){
+  try{ localStorage.setItem(MS_STORAGE_KEY, JSON.stringify(msState)); }catch(e){}
+}
+
+let msState = msLoadState();
+const msBalanceOut = document.getElementById('msBalanceOut');
+const msMultOut = document.getElementById('msMultOut');
+const msWinOut = document.getElementById('msWinOut');
+const msBetSlider = document.getElementById('msBetSlider');
+const msBetOut = document.getElementById('msBetOut');
+const msActionBtn = document.getElementById('msActionBtn');
+const msStatus = document.getElementById('msStatus');
+const msGrid = document.getElementById('msGrid');
+const msRestartBtn = document.getElementById('msRestartBtn');
+const diffButtons = document.querySelectorAll('.diffBtn');
+
+function msRenderStats(){
+  msBalanceOut.textContent = Math.round(msState.balance);
+  msMultOut.textContent = msMultiplier.toFixed(2) + 'x';
+  msWinOut.textContent = msActive ? Math.round(msCurrentWin) : 0;
+  if(msActive){
+    msActionBtn.textContent = 'Забрать ' + Math.round(msCurrentWin);
+  }else{
+    msActionBtn.textContent = 'Поставить ' + parseInt(msBetSlider.value, 10);
+  }
+}
+msBetSlider.addEventListener('input', () => {
+  msBetOut.textContent = msBetSlider.value;
+  if(!msActive) msActionBtn.textContent = 'Поставить ' + parseInt(msBetSlider.value, 10);
+});
+
+diffButtons.forEach(btn => {
+  if(btn.dataset.diff === msState.difficulty) btn.classList.add('active');
+  btn.addEventListener('click', () => {
+    if(msActive) return;
+    diffButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    msState.difficulty = btn.dataset.diff;
+    msSaveState();
+    msNewGame();
+  });
+});
+
+let msBoard = [];
+let msSize = 8;
+let msMineCount = 10;
+let msGameOver = false;
+let msFirstClick = true;
+let msRevealedCount = 0;
+let msScore = 0;
+let msPressTimer = null;
+let msActive = false;
+let msBet = 0;
+let msMultiplier = 1.00;
+let msCurrentWin = 0;
+
+function msGetMultiplier(){
+  const cfg = MS_DIFFICULTIES[msState.difficulty];
+  const total = cfg.size * cfg.size;
+  const safe = total - cfg.mines;
+  const k = msRevealedCount;
+
+  if(k <= 0) return 1;
+
+  // Вероятность открыть k безопасных клеток подряд
+  // при случайном размещении мин без "подкручивания".
+  let survival = 1;
+  for(let i = 0; i < k; i++){
+    survival *= (safe - i) / (total - i);
+  }
+
+  // Фиксированный RTP: при любом заранее выбранном количестве
+  // открытий математическое ожидание выплаты одинаково — 95%.
+  return MS_RTP / survival;
+}
+
+function msNewGame(){
+  if(msActive) return;
+  const cfg = MS_DIFFICULTIES[msState.difficulty] || MS_DIFFICULTIES.easy;
+  msSize = cfg.size;
+  msMineCount = cfg.mines;
+  msGameOver = false;
+  msFirstClick = true;
+  msRevealedCount = 0;
+  msScore = 0;
+  msMultiplier = 1.00;
+  msCurrentWin = 0;
+
+  msBoard = [];
+  for(let i=0;i<msSize*msSize;i++){
+    msBoard.push({ mine:false, revealed:false, flagged:false, adjacent:0 });
+  }
+
+  msStatus.textContent = 'Нажмите на клетку или кнопку, чтобы поставить ' + parseInt(msBetSlider.value, 10);
+  msGrid.style.gridTemplateColumns = 'repeat(' + msSize + ', 1fr)';
+  msRenderStats();
+  msRenderBoard();
+}
+
+function msPlaceMines(excludeIndex){
+  // Сначала исключаем первую клетку, затем честно перемешиваем остальные.
+  // crypto.getRandomValues даёт непредсказуемый порядок на стороне клиента.
+  const candidates = [];
+  for(let i=0;i<msBoard.length;i++){
+    if(i !== excludeIndex) candidates.push(i);
+  }
+
+  for(let i=candidates.length-1;i>0;i--){
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const j = buf[0] % (i + 1);
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+
+  for(let i=0;i<msMineCount;i++){
+    msBoard[candidates[i]].mine = true;
+  }
+
+  for(let i=0;i<msBoard.length;i++){
+    if(msBoard[i].mine) continue;
+    msBoard[i].adjacent = msNeighbors(i).filter(n => msBoard[n].mine).length;
+  }
+}
+
+function msNeighbors(idx){
+  const x = idx % msSize, y = Math.floor(idx / msSize);
+  const result = [];
+  for(let dx=-1; dx<=1; dx++){
+    for(let dy=-1; dy<=1; dy++){
+      if(dx===0 && dy===0) continue;
+      const nx = x+dx, ny = y+dy;
+      if(nx>=0 && nx<msSize && ny>=0 && ny<msSize) result.push(ny*msSize+nx);
+    }
+  }
+  return result;
+}
+
+function msStartRound(){
+  const bet = parseInt(msBetSlider.value, 10);
+  if(!bet || bet <= 0) {
+    msStatus.textContent = 'Выберите ставку';
+    return false;
+  }
+  if(bet > msState.balance) {
+    msStatus.textContent = 'Недостаточно очков для такой ставки';
+    return false;
+  }
+
+  msBet = bet;
+  msState.balance -= bet;
+  msActive = true;
+  msGameOver = false;
+  msFirstClick = true;
+  msRevealedCount = 0;
+  msMultiplier = 1.00;
+  msCurrentWin = msBet;
+  msState.played += 1;
+  msStatus.textContent = 'Ставка ' + msBet + ' принята. Открывайте клетки.';
+  msSaveState();
+  msRenderStats();
+  return true;
+}
+
+function msReveal(idx){
+  if(msGameOver || msBoard[idx].revealed || msBoard[idx].flagged) return;
+
+  // Можно начать игру прямо кликом по любой клетке — отдельное нажатие
+  // кнопки "Поставить" не требуется.
+  if(!msActive){
+    if(!msStartRound()) return;
+  }
+
+  if(msFirstClick){
+    msPlaceMines(idx);
+    msFirstClick = false;
+  }
+
+  const cell = msBoard[idx];
+
+  if(cell.mine){
+    cell.revealed = true;
+    msGameOver = true;
+    msActive = false;
+    msCurrentWin = 0;
+    msStatus.textContent = '💥 Мина! Ставка ' + msBet + ' потеряна.';
+    msBoard.forEach(c => { if(c.mine) c.revealed = true; });
+    msSaveState();
+    msRenderStats();
+    msRenderBoard();
+    return;
+  }
+
+  // Открытая безопасная клетка увеличивает множитель.
+  cell.revealed = true;
+  msRevealedCount++;
+  msMultiplier = msGetMultiplier();
+  msCurrentWin = Math.round(msBet * msMultiplier);
+
+  // Если открыты все безопасные клетки — автоматическая победа.
+  const safeTotal = msBoard.length - msMineCount;
+  if(msRevealedCount >= safeTotal){
+    msCashOut(true);
+    return;
+  }
+
+  msStatus.textContent = 'Открыто! ' + msMultiplier.toFixed(2) + 'x — можно забрать ' + msCurrentWin;
+  msRenderStats();
+  msRenderBoard();
+}
+
+function msToggleFlag(idx){
+  if(msGameOver || msActive) return;
+  const cell = msBoard[idx];
+  if(cell.revealed) return;
+  cell.flagged = !cell.flagged;
+  msRenderBoard();
+}
+
+function msCashOut(autoWin=false){
+  if(!msActive) return;
+
+  const win = Math.round(msCurrentWin);
+  msState.balance += win;
+  if(msMultiplier > msState.best) msState.best = msMultiplier;
+  msState.wins += 1;
+
+  msActive = false;
+  msGameOver = true;
+  msStatus.textContent = (autoWin ? '🎉 Все безопасные клетки открыты! ' : '💰 Забрали! ')
+    + win + ' очков на ' + msMultiplier.toFixed(2) + 'x';
+
+  msSaveState();
+  msRenderStats();
+  msRenderBoard();
+}
+
+msActionBtn.addEventListener('click', () => {
+  if(msActive){
+    msCashOut(false);
+    return;
+  }
+
+  // После окончания раунда эта же кнопка начинает новую игру и сразу принимает ставку.
+  if(msGameOver){
+    msNewGame();
+  }
+  msStartRound();
+});
+
+function msRenderBoard(){
+  msGrid.innerHTML = '';
+  msBoard.forEach((cell, idx) => {
+    const div = document.createElement('div');
+    div.className = 'mine-cell';
+
+    if(cell.revealed){
+      div.classList.add('revealed');
+      if(cell.mine){
+        div.classList.add('mine');
+        div.textContent = '💣';
+      } else {
+        // Никаких цифр: только эффект удачного открытия и галочка.
+        div.classList.add('safe-open');
+        div.textContent = '✓';
+      }
+    } else if(cell.flagged){
+      div.classList.add('flagged');
+      div.textContent = '🚩';
+    }
+
+    div.addEventListener('click', () => msReveal(idx));
+    div.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      msToggleFlag(idx);
+    });
+
+    div.addEventListener('touchstart', () => {
+      msPressTimer = setTimeout(() => msToggleFlag(idx), 500);
+    });
+    div.addEventListener('touchend', () => clearTimeout(msPressTimer));
+    div.addEventListener('touchmove', () => clearTimeout(msPressTimer));
+
+    msGrid.appendChild(div);
+  });
+}
+
+msNewGame();
+msNewGame();
 </script>
 </body>
 </html>
