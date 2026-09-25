@@ -122,7 +122,7 @@ button:active{transform:scale(0.98);}
   <div class="controls">
     <div class="row">
       <label>Ставка</label>
-      <input type="range" id="betSlider" min="10" max="500" step="10" value="50">
+      <input type="range" id="betSlider" min="5" max="1000" step="10" value="50">
       <span class="bet-out" id="betOut">50</span>
     </div>
     <div class="err" id="err"></div>
@@ -153,7 +153,7 @@ const RTP = 0.90;
 const STORAGE_KEY = 'rocket_game_state_v2';
 
 function loadState(){
-  const defaults = { balance: 10000, best: 0, rounds: 0, history: [] };
+  const defaults = { balance: 1000, best: 0, rounds: 0, history: [] };
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
@@ -367,11 +367,11 @@ function startRound(){
   const bet = parseInt(betSlider.value, 10);
 
   if(!bet || bet <= 0){
-    errEl.textContent = 'Выберите ставку больше нуля';
+    errEl.textContent = 'Выберите ставку больше';
     return;
   }
   if(bet > state.balance){
-    errEl.textContent = 'Недостаточно очков для такой ставки';
+    errEl.textContent = 'Недостаточно средств для такой ставки';
     return;
   }
 
@@ -439,7 +439,7 @@ function crash(){
   if(!cashedOut){
     state.rounds += 1;
     overlayBig.textContent = 'Взрыв на ' + crashPoint.toFixed(2) + 'x';
-    overlaySmall.textContent = 'Ставка ' + currentBet + ' очков потеряна';
+    overlaySmall.textContent = 'Ставка ' + currentBet + '  потеряна';
     overlay.classList.remove('hidden');
     addHistory(currentBet, crashPoint, -currentBet);
     saveState();
@@ -467,7 +467,7 @@ function cashOut(){
   state.rounds += 1;
   addHistory(currentBet, currentMult, win - currentBet);
 
-  showToast('+' + win + ' очков забрано на ' + currentMult.toFixed(2) + 'x');
+  showToast('+' + win + ' $ забрано на ' + currentMult.toFixed(2) + 'x');
 
   playBtn.textContent = 'Ракета летит…';
   playBtn.disabled = true;
